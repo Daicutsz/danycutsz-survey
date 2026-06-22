@@ -16,7 +16,7 @@ const adminState = {
 let supabase = null;
 try {
   if (CONFIG.SUPABASE_URL && !CONFIG.SUPABASE_URL.includes('TU_PROJECT')) {
-    supabase = window.supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY);
+    supabase = window.supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY, { auth: { persistSession: false } });
   }
 } catch(e) { console.warn('Supabase no configurado'); }
 

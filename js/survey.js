@@ -22,21 +22,24 @@ const state = {
 };
 
 // ── Supabase Init ───────────────────────────────────────────
-let supabase = null;
+let supabaseClient = null;
 try {
   if (CONFIG.SUPABASE_URL && !CONFIG.SUPABASE_URL.includes('TU_PROJECT')) {
-    supabase = window.supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY);
+    supabaseClient = window.supabase.createClient(
+      CONFIG.SUPABASE_URL,
+      CONFIG.SUPABASE_ANON_KEY,
+      { auth: { persistSession: false } }
+    );
   }
 } catch(e) {
-  console.warn('Supabase no inicializado — revisa config.js');
+  console.warn('Supabase no inicializado:', e);
 }
 
-// ── Anti-spam (localStorage cooldown) ──────────────────────
+// ── Anti-spam ───────────────────────────────────────────────
 function checkCooldown() {
   const last = localStorage.getItem('dcy_last_submit');
   if (!last) return true;
-  const elapsed = (Date.now() - parseInt(last)) / 1000;
-  return elapsed > CONFIG.COOLDOWN_SECONDS;
+  return (Date.now() - parseInt(last)) / 1000 > CONFIG.COOLDOWN_SECONDS;
 }
 function setCooldown() {
   localStorage.setItem('dcy_last_submit', Date.now().toString());
@@ -53,21 +56,19 @@ function showToast(msg, type = '') {
 
 // ── Progress ────────────────────────────────────────────────
 function updateProgress(q) {
-  const pct = (q / state.totalQ) * 100;
-  document.getElementById('progressFill').style.width = pct + '%';
+  document.getElementById('progressFill').style.width = (q / state.totalQ * 100) + '%';
   document.getElementById('progressText').textContent = `${q} / ${state.totalQ}`;
 }
 
 // ── Scale Buttons (1-10) ─────────────────────────────────────
-function buildScale(containerId, field, displayId, min = 1, max = 10) {
+function buildScale(containerId, field, displayId) {
   const wrap = document.getElementById(containerId);
   if (!wrap) return;
-  for (let i = min; i <= max; i++) {
+  for (let i = 1; i <= 10; i++) {
     const btn = document.createElement('button');
     btn.className = 'scale-btn';
     btn.textContent = i;
     btn.type = 'button';
-    btn.setAttribute('aria-label', `${i} — ${SCALE_LABELS[i] || i}`);
     btn.addEventListener('click', () => {
       wrap.querySelectorAll('.scale-btn').forEach(b => b.classList.remove('selected'));
       btn.classList.add('selected');
@@ -78,9 +79,7 @@ function buildScale(containerId, field, displayId, min = 1, max = 10) {
         disp.querySelector('.selected-number').textContent = i;
         disp.querySelector('.selected-label').textContent = SCALE_LABELS[i] || '';
       }
-      // Enable next button
-      const card = btn.closest('.question-card');
-      if (card) enableNext(card);
+      enableNext(btn.closest('.question-card'));
     });
     wrap.appendChild(btn);
   }
@@ -92,15 +91,9 @@ function buildNPS() {
   if (!wrap) return;
   for (let i = 0; i <= 10; i++) {
     const btn = document.createElement('button');
-    btn.className = 'nps-btn';
+    btn.className = 'nps-btn ' + (i <= 6 ? 'nps-detractor' : i <= 8 ? 'nps-passive' : 'nps-promoter');
     btn.textContent = i;
     btn.type = 'button';
-    // Assign NPS category class
-    if (i <= 6) btn.classList.add('nps-detractor');
-    else if (i <= 8) btn.classList.add('nps-passive');
-    else btn.classList.add('nps-promoter');
-
-    btn.setAttribute('aria-label', `NPS ${i} — ${NPS_LABELS[i]}`);
     btn.addEventListener('click', () => {
       wrap.querySelectorAll('.nps-btn').forEach(b => b.classList.remove('selected'));
       btn.classList.add('selected');
@@ -111,8 +104,7 @@ function buildNPS() {
         disp.querySelector('.selected-number').textContent = i;
         document.getElementById('nps-label-text').textContent = NPS_LABELS[i];
       }
-      const card = btn.closest('.question-card');
-      if (card) enableNext(card);
+      enableNext(btn.closest('.question-card'));
     });
     wrap.appendChild(btn);
   }
@@ -126,23 +118,18 @@ function buildBarbers() {
     const btn = document.createElement('button');
     btn.className = 'barber-btn';
     btn.type = 'button';
-    btn.dataset.value = b.id;
-    btn.innerHTML = `
-      <div class="barber-avatar">${b.emoji}</div>
-      <span class="barber-name">${b.name}</span>
-    `;
+    btn.innerHTML = `<div class="barber-avatar">${b.emoji}</div><span class="barber-name">${b.name}</span>`;
     btn.addEventListener('click', () => {
-      wrap.querySelectorAll('.barber-btn').forEach(b => b.classList.remove('selected'));
+      wrap.querySelectorAll('.barber-btn').forEach(x => x.classList.remove('selected'));
       btn.classList.add('selected');
       state.answers.barber = b.name;
-      const card = btn.closest('.question-card');
-      if (card) enableNext(card);
+      enableNext(btn.closest('.question-card'));
     });
     wrap.appendChild(btn);
   });
 }
 
-// ── Choice Buttons ───────────────────────────────────────────
+// ── Choice Grids ─────────────────────────────────────────────
 function initChoiceGrids() {
   document.querySelectorAll('.choice-grid').forEach(grid => {
     const field = grid.dataset.field;
@@ -151,25 +138,22 @@ function initChoiceGrids() {
         grid.querySelectorAll('.choice-btn').forEach(b => b.classList.remove('selected'));
         btn.classList.add('selected');
         state.answers[field] = btn.dataset.value;
-        const card = btn.closest('.question-card');
-        if (card) enableNext(card);
+        enableNext(btn.closest('.question-card'));
       });
     });
   });
 }
 
-// ── Enable Next Button ───────────────────────────────────────
 function enableNext(card) {
-  const btn = card.querySelector('.btn-next');
+  const btn = card?.querySelector('.btn-next');
   if (btn) btn.disabled = false;
 }
 
-// ── Question Navigation ──────────────────────────────────────
+// ── Navigation ───────────────────────────────────────────────
 function goToQuestion(num) {
   const current = document.querySelector('.question-card.active');
   const next = document.querySelector(`.question-card[data-q="${num}"]`);
   if (!next) return;
-
   current?.classList.add('exit');
   setTimeout(() => {
     current?.classList.remove('active', 'exit');
@@ -180,7 +164,6 @@ function goToQuestion(num) {
   }, 200);
 }
 
-// ── Next Button Click ────────────────────────────────────────
 function initNextButtons() {
   document.querySelectorAll('.btn-next').forEach(btn => {
     btn.addEventListener('click', () => {
@@ -190,40 +173,32 @@ function initNextButtons() {
   });
 }
 
-// ── Textarea char counters ───────────────────────────────────
+// ── Textareas ────────────────────────────────────────────────
 function initTextareas() {
   const likedTA = document.getElementById('liked_most');
   const improveTA = document.getElementById('improvement');
-
-  if (likedTA) {
-    likedTA.addEventListener('input', () => {
-      state.answers.liked_most = likedTA.value;
-      document.getElementById('count-liked').textContent = likedTA.value.length;
-    });
-  }
-  if (improveTA) {
-    improveTA.addEventListener('input', () => {
-      state.answers.improvement = improveTA.value;
-      document.getElementById('count-improve').textContent = improveTA.value.length;
-    });
-  }
+  if (likedTA) likedTA.addEventListener('input', () => {
+    state.answers.liked_most = likedTA.value;
+    document.getElementById('count-liked').textContent = likedTA.value.length;
+  });
+  if (improveTA) improveTA.addEventListener('input', () => {
+    state.answers.improvement = improveTA.value;
+    document.getElementById('count-improve').textContent = improveTA.value.length;
+  });
 }
 
 // ── Submit ───────────────────────────────────────────────────
 async function submitSurvey() {
   if (state.submitting) return;
-
-  // Anti-spam
   if (!checkCooldown()) {
-    showToast('Por favor espera un momento antes de enviar otra encuesta.', 'error');
+    showToast('Espera un momento antes de enviar otra encuesta.', 'error');
     return;
   }
 
-  // Validar campos obligatorios
-  const required = ['satisfaction', 'attention', 'expectations', 'nps', 'cleanliness', 'wait_time', 'barber', 'is_new_client'];
+  const required = ['satisfaction','attention','expectations','nps','cleanliness','wait_time','barber','is_new_client'];
   for (const field of required) {
     if (state.answers[field] === null || state.answers[field] === undefined) {
-      showToast('Asegúrate de completar todas las preguntas.', 'error');
+      showToast('Completa todas las preguntas antes de enviar.', 'error');
       return;
     }
   }
@@ -238,38 +213,34 @@ async function submitSurvey() {
 
   const now = new Date();
   const payload = {
-    created_at: now.toISOString(),
-    date: now.toLocaleDateString('es-MX'),
-    time: now.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' }),
-    barber: state.answers.barber,
+    created_at:   now.toISOString(),
+    date:         now.toLocaleDateString('es-MX'),
+    time:         now.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' }),
+    barber:       state.answers.barber,
     satisfaction: state.answers.satisfaction,
-    attention: state.answers.attention,
+    attention:    state.answers.attention,
     expectations: state.answers.expectations,
-    nps: state.answers.nps,
-    cleanliness: state.answers.cleanliness,
-    wait_time: state.answers.wait_time,
+    nps:          state.answers.nps,
+    cleanliness:  state.answers.cleanliness,
+    wait_time:    state.answers.wait_time,
     is_new_client: state.answers.is_new_client === 'Sí',
-    liked_most: state.answers.liked_most || null,
-    improvement: state.answers.improvement || null,
+    liked_most:   state.answers.liked_most || null,
+    improvement:  state.answers.improvement || null,
   };
 
   try {
-    if (supabase) {
-      const { error } = await supabase.from('surveys').insert([payload]);
+    if (supabaseClient) {
+      const { error } = await supabaseClient.from('surveys').insert([payload]);
       if (error) throw error;
     } else {
-      // Fallback: guardar en localStorage para demo
       const existing = JSON.parse(localStorage.getItem('dcy_surveys') || '[]');
       existing.push({ id: Date.now(), ...payload });
       localStorage.setItem('dcy_surveys', JSON.stringify(existing));
-      console.log('Guardado en localStorage (modo demo):', payload);
     }
-
     setCooldown();
     showSuccess();
-
   } catch (err) {
-    console.error('Error al guardar:', err);
+    console.error('Error:', err);
     showToast('Error al enviar. Verifica tu conexión.', 'error');
     btn.disabled = false;
     submitText.textContent = 'Enviar mi opinión';
@@ -282,17 +253,14 @@ function showSuccess() {
   document.getElementById('app').style.display = 'none';
   const s = document.getElementById('successScreen');
   s.style.display = 'flex';
-  // Update WA link
   const waBtn = s.querySelector('.btn-wa');
   if (waBtn && CONFIG.WA_NUMBER) {
     waBtn.href = `https://wa.me/${CONFIG.WA_NUMBER}?text=Hola%2C%20quiero%20agendar%20mi%20próxima%20cita%20en%20danycutsz%20💈`;
   }
 }
 
-// ── Submit button ────────────────────────────────────────────
 function initSubmit() {
-  const btn = document.getElementById('btnSubmit');
-  if (btn) btn.addEventListener('click', submitSurvey);
+  document.getElementById('btnSubmit')?.addEventListener('click', submitSurvey);
 }
 
 // ── Splash ───────────────────────────────────────────────────
