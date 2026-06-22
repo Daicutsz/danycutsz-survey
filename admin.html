@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>danycutsz — Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <link rel="stylesheet" href="css/admin.css" />
+</head>
+<body>
+
+  <!-- ── LOGIN ── -->
+  <div class="login-screen" id="loginScreen">
+    <div class="login-card">
+      <div class="login-brand">
+        <svg width="36" height="36" viewBox="0 0 48 48" fill="none">
+          <rect width="48" height="48" rx="12" fill="#C9A84C" fill-opacity="0.15"/>
+          <path d="M14 34L20 14H24L28 28L32 14H36L30 34H26L24 26L22 34H14Z" fill="#C9A84C"/>
+        </svg>
+        <span>danycutsz</span>
+      </div>
+      <h2>Dashboard Admin</h2>
+      <p class="login-sub">Acceso exclusivo para administradores</p>
+      <div class="form-group">
+        <input type="password" id="loginPass" class="admin-input" placeholder="Contraseña" autocomplete="current-password" />
+        <div class="input-error" id="loginError"></div>
+      </div>
+      <button class="btn-login" id="btnLogin">Ingresar</button>
+    </div>
+  </div>
+
+  <!-- ── DASHBOARD ── -->
+  <div class="dashboard" id="dashboard" style="display:none">
+
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-brand">
+        <svg width="28" height="28" viewBox="0 0 48 48" fill="none">
+          <rect width="48" height="48" rx="10" fill="#C9A84C" fill-opacity="0.12"/>
+          <path d="M14 34L20 14H24L28 28L32 14H36L30 34H26L24 26L22 34H14Z" fill="#C9A84C"/>
+        </svg>
+        <div>
+          <div class="brand-name">danycutsz</div>
+          <div class="brand-sub">Dashboard</div>
+        </div>
+      </div>
+
+      <nav class="sidebar-nav">
+        <a href="#" class="nav-item active" data-section="overview">
+          <span class="nav-icon">📊</span> Resumen
+        </a>
+        <a href="#" class="nav-item" data-section="responses">
+          <span class="nav-icon">📋</span> Respuestas
+        </a>
+        <a href="#" class="nav-item" data-section="barbers">
+          <span class="nav-icon">✂️</span> Barberos
+        </a>
+        <a href="#" class="nav-item" data-section="insights">
+          <span class="nav-icon">🧠</span> Insights
+        </a>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div class="last-updated" id="lastUpdated">—</div>
+        <button class="btn-logout" id="btnLogout">Cerrar sesión</button>
+      </div>
+    </aside>
+
+    <!-- Main -->
+    <main class="main-content">
+
+      <!-- Top Bar -->
+      <header class="top-bar">
+        <div class="top-bar-left">
+          <h1 class="page-title" id="pageTitle">Resumen</h1>
+          <div class="date-range-selector">
+            <button class="range-btn active" data-days="7">7 días</button>
+            <button class="range-btn" data-days="30">30 días</button>
+            <button class="range-btn" data-days="90">90 días</button>
+            <button class="range-btn" data-days="0">Todo</button>
+          </div>
+        </div>
+        <div class="top-bar-right">
+          <button class="btn-export" id="btnExportExcel">
+            <span>📊</span> Excel
+          </button>
+          <button class="btn-export" id="btnExportCSV">
+            <span>📄</span> CSV
+          </button>
+          <button class="btn-export" id="btnExportPDF">
+            <span>🖨</span> PDF
+          </button>
+          <button class="btn-refresh" id="btnRefresh">↻</button>
+        </div>
+      </header>
+
+      <!-- ── SECTION: OVERVIEW ── -->
+      <section class="section active" id="section-overview">
+
+        <!-- KPI Cards -->
+        <div class="kpi-grid">
+          <div class="kpi-card">
+            <div class="kpi-label">Total encuestas</div>
+            <div class="kpi-value" id="kpi-total">—</div>
+            <div class="kpi-sub" id="kpi-total-sub"></div>
+          </div>
+          <div class="kpi-card gold">
+            <div class="kpi-label">Satisfacción promedio</div>
+            <div class="kpi-value" id="kpi-satisfaction">—</div>
+            <div class="kpi-sub">/10</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-label">Atención promedio</div>
+            <div class="kpi-value" id="kpi-attention">—</div>
+            <div class="kpi-sub">/10</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-label">NPS General</div>
+            <div class="kpi-value" id="kpi-nps">—</div>
+            <div class="kpi-sub nps-label-txt" id="kpi-nps-label"></div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-label">Clientes nuevos</div>
+            <div class="kpi-value" id="kpi-new">—</div>
+            <div class="kpi-sub">de total</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-label">Ambiente y limpieza</div>
+            <div class="kpi-value" id="kpi-clean">—</div>
+            <div class="kpi-sub">/10</div>
+          </div>
+        </div>
+
+        <!-- Charts Row -->
+        <div class="charts-row">
+          <div class="chart-card wide">
+            <div class="chart-header">
+              <h3>Satisfacción a lo largo del tiempo</h3>
+            </div>
+            <div class="chart-wrap">
+              <canvas id="chartTimeline"></canvas>
+            </div>
+          </div>
+          <div class="chart-card">
+            <div class="chart-header">
+              <h3>Distribución de expectativas</h3>
+            </div>
+            <div class="chart-wrap">
+              <canvas id="chartExpectations"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <div class="charts-row">
+          <div class="chart-card">
+            <div class="chart-header">
+              <h3>Tiempos de espera</h3>
+            </div>
+            <div class="chart-wrap">
+              <canvas id="chartWait"></canvas>
+            </div>
+          </div>
+          <div class="chart-card">
+            <div class="chart-header">
+              <h3>Distribución NPS</h3>
+            </div>
+            <div class="chart-wrap">
+              <canvas id="chartNPS"></canvas>
+            </div>
+          </div>
+          <div class="chart-card">
+            <div class="chart-header">
+              <h3>Clientes nuevos vs recurrentes</h3>
+            </div>
+            <div class="chart-wrap">
+              <canvas id="chartClients"></canvas>
+            </div>
+          </div>
+        </div>
+
+      </section>
+
+      <!-- ── SECTION: RESPONSES ── -->
+      <section class="section" id="section-responses">
+        <div class="table-controls">
+          <input type="text" class="admin-input search-input" id="searchInput" placeholder="🔍 Buscar por barbero, comentario..." />
+        </div>
+        <div class="table-wrap">
+          <table class="data-table" id="responsesTable">
+            <thead>
+              <tr>
+                <th>Fecha</th>
+                <th>Hora</th>
+                <th>Barbero</th>
+                <th>Satisf.</th>
+                <th>Atención</th>
+                <th>NPS</th>
+                <th>Limpieza</th>
+                <th>Espera</th>
+                <th>Tipo</th>
+                <th>Expectativas</th>
+              </tr>
+            </thead>
+            <tbody id="responsesBody">
+              <tr><td colspan="10" class="empty-state">Cargando...</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="table-footer" id="tableFooter"></div>
+      </section>
+
+      <!-- ── SECTION: BARBERS ── -->
+      <section class="section" id="section-barbers">
+        <div class="barbers-grid" id="barbersGrid">
+          <!-- Generated by JS -->
+        </div>
+        <div class="chart-card" style="margin-top:24px">
+          <div class="chart-header"><h3>Comparación de satisfacción por barbero</h3></div>
+          <div class="chart-wrap">
+            <canvas id="chartBarbers"></canvas>
+          </div>
+        </div>
+      </section>
+
+      <!-- ── SECTION: INSIGHTS ── -->
+      <section class="section" id="section-insights">
+        <div class="insights-header">
+          <h2>Análisis automático</h2>
+          <p>Generado en base a tus últimas encuestas</p>
+        </div>
+        <div class="insights-grid" id="insightsGrid">
+          <!-- Generated by JS -->
+        </div>
+        <div class="comments-section">
+          <h3>Lo que más les gustó</h3>
+          <div class="comments-list" id="likedComments"></div>
+        </div>
+        <div class="comments-section">
+          <h3>Sugerencias de mejora</h3>
+          <div class="comments-list" id="improveComments"></div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <div class="toast" id="toast-admin"></div>
+
+  <script src="js/config.js"></script>
+  <script src="js/admin.js"></script>
+</body>
+</html>
