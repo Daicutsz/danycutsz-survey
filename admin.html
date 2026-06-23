@@ -14,7 +14,7 @@
 </head>
 <body>
 
-  <!-- ── LOGIN ── -->
+  <!-- LOGIN -->
   <div class="login-screen" id="loginScreen">
     <div class="login-card">
       <div class="login-brand">
@@ -30,14 +30,12 @@
         <input type="password" id="loginPass" class="admin-input" placeholder="Contraseña" autocomplete="current-password" />
         <div class="input-error" id="loginError"></div>
       </div>
-      <button class="btn-login" id="btnLogin">Ingresar</button>
+      <button class="btn-login" id="btnLogin" onclick="doLogin()">Ingresar</button>
     </div>
   </div>
 
-  <!-- ── DASHBOARD ── -->
+  <!-- DASHBOARD -->
   <div class="dashboard" id="dashboard" style="display:none">
-
-    <!-- Sidebar -->
     <aside class="sidebar">
       <div class="sidebar-brand">
         <svg width="28" height="28" viewBox="0 0 48 48" fill="none">
@@ -49,203 +47,86 @@
           <div class="brand-sub">Dashboard</div>
         </div>
       </div>
-
       <nav class="sidebar-nav">
-        <a href="#" class="nav-item active" data-section="overview">
-          <span class="nav-icon">📊</span> Resumen
-        </a>
-        <a href="#" class="nav-item" data-section="responses">
-          <span class="nav-icon">📋</span> Respuestas
-        </a>
-        <a href="#" class="nav-item" data-section="barbers">
-          <span class="nav-icon">✂️</span> Barberos
-        </a>
-        <a href="#" class="nav-item" data-section="insights">
-          <span class="nav-icon">🧠</span> Insights
-        </a>
+        <a href="#" class="nav-item active" onclick="showSection('overview');return false;"><span class="nav-icon">📊</span> Resumen</a>
+        <a href="#" class="nav-item" onclick="showSection('responses');return false;"><span class="nav-icon">📋</span> Respuestas</a>
+        <a href="#" class="nav-item" onclick="showSection('barbers');return false;"><span class="nav-icon">✂️</span> Barberos</a>
+        <a href="#" class="nav-item" onclick="showSection('insights');return false;"><span class="nav-icon">🧠</span> Insights</a>
       </nav>
-
       <div class="sidebar-footer">
         <div class="last-updated" id="lastUpdated">—</div>
-        <button class="btn-logout" id="btnLogout">Cerrar sesión</button>
+        <button class="btn-logout" onclick="doLogout()">Cerrar sesión</button>
       </div>
     </aside>
 
-    <!-- Main -->
     <main class="main-content">
-
-      <!-- Top Bar -->
       <header class="top-bar">
         <div class="top-bar-left">
           <h1 class="page-title" id="pageTitle">Resumen</h1>
           <div class="date-range-selector">
-            <button class="range-btn active" data-days="7">7 días</button>
-            <button class="range-btn" data-days="30">30 días</button>
-            <button class="range-btn" data-days="90">90 días</button>
-            <button class="range-btn" data-days="0">Todo</button>
+            <button class="range-btn active" onclick="setRange(this,7)">7 días</button>
+            <button class="range-btn" onclick="setRange(this,30)">30 días</button>
+            <button class="range-btn" onclick="setRange(this,90)">90 días</button>
+            <button class="range-btn" onclick="setRange(this,0)">Todo</button>
           </div>
         </div>
         <div class="top-bar-right">
-          <button class="btn-export" id="btnExportExcel">
-            <span>📊</span> Excel
-          </button>
-          <button class="btn-export" id="btnExportCSV">
-            <span>📄</span> CSV
-          </button>
-          <button class="btn-export" id="btnExportPDF">
-            <span>🖨</span> PDF
-          </button>
-          <button class="btn-refresh" id="btnRefresh">↻</button>
+          <button class="btn-export" onclick="exportToExcel()"><span>📊</span> Excel</button>
+          <button class="btn-export" onclick="exportToCSV()"><span>📄</span> CSV</button>
+          <button class="btn-export" onclick="exportToPDF()"><span>🖨</span> PDF</button>
+          <button class="btn-refresh" onclick="loadData()">↻</button>
         </div>
       </header>
 
-      <!-- ── SECTION: OVERVIEW ── -->
+      <!-- RESUMEN -->
       <section class="section active" id="section-overview">
-
-        <!-- KPI Cards -->
         <div class="kpi-grid">
-          <div class="kpi-card">
-            <div class="kpi-label">Total encuestas</div>
-            <div class="kpi-value" id="kpi-total">—</div>
-            <div class="kpi-sub" id="kpi-total-sub"></div>
-          </div>
-          <div class="kpi-card gold">
-            <div class="kpi-label">Satisfacción promedio</div>
-            <div class="kpi-value" id="kpi-satisfaction">—</div>
-            <div class="kpi-sub">/10</div>
-          </div>
-          <div class="kpi-card">
-            <div class="kpi-label">Atención promedio</div>
-            <div class="kpi-value" id="kpi-attention">—</div>
-            <div class="kpi-sub">/10</div>
-          </div>
-          <div class="kpi-card">
-            <div class="kpi-label">NPS General</div>
-            <div class="kpi-value" id="kpi-nps">—</div>
-            <div class="kpi-sub nps-label-txt" id="kpi-nps-label"></div>
-          </div>
-          <div class="kpi-card">
-            <div class="kpi-label">Clientes nuevos</div>
-            <div class="kpi-value" id="kpi-new">—</div>
-            <div class="kpi-sub">de total</div>
-          </div>
-          <div class="kpi-card">
-            <div class="kpi-label">Ambiente y limpieza</div>
-            <div class="kpi-value" id="kpi-clean">—</div>
-            <div class="kpi-sub">/10</div>
-          </div>
+          <div class="kpi-card"><div class="kpi-label">Total encuestas</div><div class="kpi-value" id="kpi-total">—</div><div class="kpi-sub" id="kpi-total-sub"></div></div>
+          <div class="kpi-card gold"><div class="kpi-label">Satisfacción promedio</div><div class="kpi-value" id="kpi-satisfaction">—</div><div class="kpi-sub">/10</div></div>
+          <div class="kpi-card"><div class="kpi-label">Atención promedio</div><div class="kpi-value" id="kpi-attention">—</div><div class="kpi-sub">/10</div></div>
+          <div class="kpi-card"><div class="kpi-label">NPS General</div><div class="kpi-value" id="kpi-nps">—</div><div class="kpi-sub nps-label-txt" id="kpi-nps-label"></div></div>
+          <div class="kpi-card"><div class="kpi-label">Clientes nuevos</div><div class="kpi-value" id="kpi-new">—</div><div class="kpi-sub">de total</div></div>
+          <div class="kpi-card"><div class="kpi-label">Ambiente y limpieza</div><div class="kpi-value" id="kpi-clean">—</div><div class="kpi-sub">/10</div></div>
         </div>
-
-        <!-- Charts Row -->
         <div class="charts-row">
-          <div class="chart-card wide">
-            <div class="chart-header">
-              <h3>Satisfacción a lo largo del tiempo</h3>
-            </div>
-            <div class="chart-wrap">
-              <canvas id="chartTimeline"></canvas>
-            </div>
-          </div>
-          <div class="chart-card">
-            <div class="chart-header">
-              <h3>Distribución de expectativas</h3>
-            </div>
-            <div class="chart-wrap">
-              <canvas id="chartExpectations"></canvas>
-            </div>
-          </div>
+          <div class="chart-card wide"><div class="chart-header"><h3>Satisfacción a lo largo del tiempo</h3></div><div class="chart-wrap"><canvas id="chartTimeline"></canvas></div></div>
+          <div class="chart-card"><div class="chart-header"><h3>Distribución de expectativas</h3></div><div class="chart-wrap"><canvas id="chartExpectations"></canvas></div></div>
         </div>
-
         <div class="charts-row">
-          <div class="chart-card">
-            <div class="chart-header">
-              <h3>Tiempos de espera</h3>
-            </div>
-            <div class="chart-wrap">
-              <canvas id="chartWait"></canvas>
-            </div>
-          </div>
-          <div class="chart-card">
-            <div class="chart-header">
-              <h3>Distribución NPS</h3>
-            </div>
-            <div class="chart-wrap">
-              <canvas id="chartNPS"></canvas>
-            </div>
-          </div>
-          <div class="chart-card">
-            <div class="chart-header">
-              <h3>Clientes nuevos vs recurrentes</h3>
-            </div>
-            <div class="chart-wrap">
-              <canvas id="chartClients"></canvas>
-            </div>
-          </div>
+          <div class="chart-card"><div class="chart-header"><h3>Tiempos de espera</h3></div><div class="chart-wrap"><canvas id="chartWait"></canvas></div></div>
+          <div class="chart-card"><div class="chart-header"><h3>Distribución NPS</h3></div><div class="chart-wrap"><canvas id="chartNPS"></canvas></div></div>
+          <div class="chart-card"><div class="chart-header"><h3>Clientes nuevos vs recurrentes</h3></div><div class="chart-wrap"><canvas id="chartClients"></canvas></div></div>
         </div>
-
       </section>
 
-      <!-- ── SECTION: RESPONSES ── -->
+      <!-- RESPUESTAS -->
       <section class="section" id="section-responses">
-        <div class="table-controls">
-          <input type="text" class="admin-input search-input" id="searchInput" placeholder="🔍 Buscar por barbero, comentario..." />
-        </div>
+        <div class="table-controls"><input type="text" class="admin-input search-input" id="searchInput" placeholder="🔍 Buscar..." oninput="searchTable(this.value)" /></div>
         <div class="table-wrap">
-          <table class="data-table" id="responsesTable">
-            <thead>
-              <tr>
-                <th>Fecha</th>
-                <th>Hora</th>
-                <th>Barbero</th>
-                <th>Satisf.</th>
-                <th>Atención</th>
-                <th>NPS</th>
-                <th>Limpieza</th>
-                <th>Espera</th>
-                <th>Tipo</th>
-                <th>Expectativas</th>
-              </tr>
-            </thead>
-            <tbody id="responsesBody">
-              <tr><td colspan="10" class="empty-state">Cargando...</td></tr>
-            </tbody>
+          <table class="data-table">
+            <thead><tr><th>Fecha</th><th>Hora</th><th>Barbero</th><th>Satisf.</th><th>Atención</th><th>NPS</th><th>Limpieza</th><th>Espera</th><th>Tipo</th><th>Expectativas</th></tr></thead>
+            <tbody id="responsesBody"><tr><td colspan="10" class="empty-state">Cargando...</td></tr></tbody>
           </table>
         </div>
         <div class="table-footer" id="tableFooter"></div>
       </section>
 
-      <!-- ── SECTION: BARBERS ── -->
+      <!-- BARBEROS -->
       <section class="section" id="section-barbers">
-        <div class="barbers-grid" id="barbersGrid">
-          <!-- Generated by JS -->
-        </div>
+        <div class="barbers-grid" id="barbersGrid"></div>
         <div class="chart-card" style="margin-top:24px">
-          <div class="chart-header"><h3>Comparación de satisfacción por barbero</h3></div>
-          <div class="chart-wrap">
-            <canvas id="chartBarbers"></canvas>
-          </div>
+          <div class="chart-header"><h3>Comparación por barbero</h3></div>
+          <div class="chart-wrap"><canvas id="chartBarbers"></canvas></div>
         </div>
       </section>
 
-      <!-- ── SECTION: INSIGHTS ── -->
+      <!-- INSIGHTS -->
       <section class="section" id="section-insights">
-        <div class="insights-header">
-          <h2>Análisis automático</h2>
-          <p>Generado en base a tus últimas encuestas</p>
-        </div>
-        <div class="insights-grid" id="insightsGrid">
-          <!-- Generated by JS -->
-        </div>
-        <div class="comments-section">
-          <h3>Lo que más les gustó</h3>
-          <div class="comments-list" id="likedComments"></div>
-        </div>
-        <div class="comments-section">
-          <h3>Sugerencias de mejora</h3>
-          <div class="comments-list" id="improveComments"></div>
-        </div>
+        <div class="insights-header"><h2>Análisis automático</h2><p>Generado en base a tus últimas encuestas</p></div>
+        <div class="insights-grid" id="insightsGrid"></div>
+        <div class="comments-section"><h3>Lo que más les gustó</h3><div class="comments-list" id="likedComments"></div></div>
+        <div class="comments-section"><h3>Sugerencias de mejora</h3><div class="comments-list" id="improveComments"></div></div>
       </section>
-
     </main>
   </div>
 
@@ -253,21 +134,64 @@
 
   <script src="js/config.js"></script>
   <script src="js/admin.js"></script>
+
   <script>
-    if (document.readyState === 'complete' || document.readyState === 'interactive') {
-      setTimeout(() => {
-        if (typeof initLogin === 'function') {
-          initLogin();
-          initNav();
-          initRangeButtons();
-          initSearch();
-          document.getElementById('btnRefresh')?.addEventListener('click', loadData);
-          document.getElementById('btnExportCSV')?.addEventListener('click', exportToCSV);
-          document.getElementById('btnExportExcel')?.addEventListener('click', exportToExcel);
-          document.getElementById('btnExportPDF')?.addEventListener('click', exportToPDF);
-        }
-      }, 0);
+    // Login inline — sin depender de eventos externos
+    function doLogin() {
+      const input = document.getElementById('loginPass');
+      const err = document.getElementById('loginError');
+      if (input.value === CONFIG.ADMIN_PASSWORD) {
+        sessionStorage.setItem('dcy_admin', '1');
+        document.getElementById('loginScreen').style.display = 'none';
+        document.getElementById('dashboard').style.display = 'flex';
+        loadData();
+      } else {
+        err.textContent = 'Contraseña incorrecta. Intenta de nuevo.';
+        input.value = '';
+        input.focus();
+      }
     }
+
+    function doLogout() {
+      sessionStorage.removeItem('dcy_admin');
+      location.reload();
+    }
+
+    function showSection(name) {
+      document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+      document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+      document.querySelector(`[onclick="showSection('${name}');return false;"]`).classList.add('active');
+      document.getElementById('section-' + name).classList.add('active');
+      document.getElementById('pageTitle').textContent = {overview:'Resumen',responses:'Respuestas',barbers:'Barberos',insights:'Insights'}[name];
+    }
+
+    function setRange(btn, days) {
+      document.querySelectorAll('.range-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      applyFilter(days);
+    }
+
+    function searchTable(q) {
+      const filtered = adminState.filtered.filter(s =>
+        (s.barber||'').toLowerCase().includes(q.toLowerCase()) ||
+        (s.liked_most||'').toLowerCase().includes(q.toLowerCase()) ||
+        (s.improvement||'').toLowerCase().includes(q.toLowerCase())
+      );
+      renderTable(filtered);
+    }
+
+    // Check existing session on load
+    window.addEventListener('load', () => {
+      if (sessionStorage.getItem('dcy_admin') === '1') {
+        document.getElementById('loginScreen').style.display = 'none';
+        document.getElementById('dashboard').style.display = 'flex';
+        loadData();
+      }
+      // Enter key on password field
+      document.getElementById('loginPass').addEventListener('keydown', e => {
+        if (e.key === 'Enter') doLogin();
+      });
+    });
   </script>
 </body>
 </html>
