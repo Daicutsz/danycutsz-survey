@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#080808" />
+  <meta name="robots" content="noindex" />
+  <title>danycutsz — Resultados de la encuesta de servicio</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0"></script>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    :root{--bg:#080808;--card:#111;--elev:#1a1a1a;--gold:#C9A84C;--text:#f5f5f5;--sec:#9a9a9a;--border:rgba(255,255,255,.08)}
+    body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg);color:var(--text);min-height:100dvh;padding:20px 16px 60px}
+    .wrap{max-width:760px;margin:0 auto}
+    h1{font-size:22px;font-weight:800}
+    .sub{color:var(--sec);font-size:13px;margin:4px 0 20px}
+    .card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:18px;margin-bottom:14px}
+    .card h2{font-size:14px;font-weight:700;margin-bottom:14px;line-height:1.35}
+    .kpis{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px}
+    .kpi{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:16px}
+    .kpi b{display:block;font-size:28px;color:var(--gold);font-weight:800}
+    .kpi span{font-size:12px;color:var(--sec)}
+    .row{margin-bottom:10px}
+    .row .lbl{display:flex;justify-content:space-between;font-size:13px;margin-bottom:5px;gap:10px}
+    .row .lbl em{font-style:normal;color:var(--sec);white-space:nowrap}
+    .bar{height:8px;background:var(--elev);border-radius:6px;overflow:hidden}
+    .bar i{display:block;height:100%;background:var(--gold);border-radius:6px}
+    .reco{border-color:rgba(201,168,76,.45)}
+    .reco p{font-size:14px;line-height:1.55;color:var(--text)}
+    .reco small{display:block;margin-top:10px;color:var(--sec);font-size:12px}
+    .comment{border-top:1px solid var(--border);padding:10px 0;font-size:13px;line-height:1.5}
+    .comment:first-of-type{border-top:0}
+    .comment time{display:block;color:var(--sec);font-size:11px;margin-top:3px}
+    button,input{font-family:inherit}
+    .btn{background:var(--gold);color:#000;border:0;border-radius:10px;padding:11px 16px;font-weight:700;font-size:13px;cursor:pointer}
+    .btn.ghost{background:transparent;color:var(--gold);border:1px solid var(--gold)}
+    .actions{display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap}
+    #login{max-width:340px;margin:18vh auto 0;text-align:center}
+    #login input{width:100%;padding:13px;border-radius:10px;border:1px solid var(--border);background:var(--elev);color:var(--text);margin:14px 0 10px;font-size:15px}
+    #err{color:#E57373;font-size:12px;min-height:16px;margin-bottom:8px}
+    .empty{color:var(--sec);font-size:13px}
+  </style>
+</head>
+<body>
+  <div id="login">
+    <h1>Resultados</h1>
+    <p class="sub">Encuesta de servicio · danycutsz</p>
+    <input type="password" id="pass" placeholder="Contraseña" autocomplete="current-password" />
+    <div id="err"></div>
+    <button class="btn" id="btnLogin" style="width:100%">Entrar</button>
+  </div>
+
+  <div class="wrap" id="panel" style="display:none">
+    <h1>Encuesta de servicio</h1>
+    <p class="sub">Detalle vs. velocidad · resultados en tiempo real</p>
+    <div class="actions">
+      <button class="btn" id="btnReload">Actualizar</button>
+      <button class="btn ghost" id="btnCsv">Exportar CSV</button>
+    </div>
+    <div id="content"></div>
+  </div>
+
+  <script src="js/config.js"></script>
+  <script>
+    const sb = window.supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY, { auth: { persistSession: false } });
+
+    const SECTIONS = [
+      { key: 'delay_frequency',   title: 'Frecuencia de retrasos',            order: ['Nunca','Pocas veces','Frecuentemente','Casi siempre'] },
+      { key: 'wait_time',         title: 'Tiempo de espera habitual',         order: ['Menos de 10 minutos','10 a 20 minutos','20 a 30 minutos','Más de 30 minutos'] },
+      { key: 'detail_perception', title: 'Percepción del detalle vs. antes',  order: ['Mejor que antes','Igual que antes','Peor que antes','No noto diferencia'] },
+      { key: 'preference',        title: 'Preferencia: detalle o velocidad',  order: ['Mismo nivel de detalle, aunque la cita dure más','Servicio más rápido, con menos detalle','Poder elegir entre ambas según el día'] },
+      { key: 'delay_impact',      title: 'Impacto de los retrasos',           order: ['No me afectan','Me incomodan un poco','Debo reorganizar mi día','Consideraría ir a otro lugar'] },
+      { key: 'interest_two_tiers',title: 'Interés en servicio Detallado + Express', order: ['Sí, me interesa','No, prefiero un solo servicio','Depende del día'] }
+    ];
+    const PREF = { detail: SECTIONS[3].order[0], fast: SECTIONS[3].order[1], choose: SECTIONS[3].order[2] };
+    let rows = [];
+
+    // ── Acceso ──
+    function enter() {
+      document.getElementById('login').style.display = 'none';
+      document.getElementById('panel').style.display = 'block';
+      load();
+    }
+    document.getElementById('btnLogin').onclick = tryLogin;
+    document.getElementById('pass').addEventListener('keydown', e => { if (e.key === 'Enter') tryLogin(); });
+    function tryLogin() {
+      if (document.getElementById('pass').value === CONFIG.ADMIN_PASSWORD) {
+        sessionStorage.setItem('dcy_service_admin', '1'); enter();
+      } else { document.getElementById('err').textContent = 'Contraseña incorrecta.'; }
+    }
+    if (sessionStorage.getItem('dcy_service_admin') === '1') enter();
+    document.getElementById('btnReload').onclick = load;
+
+    // ── Datos ──
+    async function load() {
+      const box = document.getElementById('content');
+      box.innerHTML = '<p class="empty">Cargando…</p>';
+      const { data, error } = await sb.from('service_survey').select('*').order('created_at', { ascending: false });
+      if (error) { box.innerHTML = '<p class="empty">Error al cargar: ' + error.message.replace(/</g,'&lt;') + '</p>'; return; }
+      rows = data || [];
+      render();
+    }
+
+    function pct(n, t) { return t ? Math.round(n / t * 100) : 0; }
+
+    function recommendation() {
+      const t = rows.length;
+      if (t < 10) return { text: 'Aún hay muy pocas respuestas (' + t + '). Se recomienda esperar al menos 30 para tomar decisiones con una tendencia confiable.', note: '' };
+      const c = k => rows.filter(r => r.preference === k).length;
+      const d = pct(c(PREF.detail), t), f = pct(c(PREF.fast), t), ch = pct(c(PREF.choose), t);
+      const tiers = pct(rows.filter(r => r.interest_two_tiers === 'Sí, me interesa').length, t);
+      const risk = pct(rows.filter(r => r.delay_impact === 'Consideraría ir a otro lugar').length, t);
+      let text;
+      if (ch >= 40 || (d < 50 && f < 50)) text = 'Las preferencias están divididas (' + ch + '% quiere elegir). Se recomienda crear dos servicios en Rufyx: “Detallado” (cita más larga) y “Express” (cita más corta), cada uno con su duración y precio.';
+      else if (d >= 50) text = 'La mayoría (' + d + '%) prefiere mantener el detalle. Se recomienda conservarlo y ampliar la duración de cada cita en Rufyx para que la agenda refleje el tiempo real.';
+      else text = 'La mayoría (' + f + '%) prefiere rapidez. Se recomienda reducir el tiempo por cita y estandarizar el proceso.';
+      let note = 'Interés en dos tipos de servicio: ' + tiers + '%.';
+      if (risk >= 10) note += ' Alerta: ' + risk + '% consideraría ir a otro lugar por los retrasos; conviene corregir la duración de las citas con prioridad.';
+      return { text, note };
+    }
+
+    function render() {
+      const t = rows.length;
+      const box = document.getElementById('content');
+      if (!t) { box.innerHTML = '<p class="empty">Todavía no hay respuestas.</p>'; return; }
+      const avg = (rows.reduce((s, r) => s + (r.satisfaction || 0), 0) / t).toFixed(1);
+      const reco = recommendation();
+
+      let html = '<div class="kpis"><div class="kpi"><b>' + t + '</b><span>Respuestas</span></div>' +
+                 '<div class="kpi"><b>' + avg + '</b><span>Satisfacción promedio (1–10)</span></div></div>';
+      html += '<div class="card reco"><h2>Lectura sugerida</h2><p>' + esc(reco.text) + '</p>' +
+              (reco.note ? '<small>' + esc(reco.note) + '</small>' : '') + '</div>';
+
+      SECTIONS.forEach(s => {
+        html += '<div class="card"><h2>' + esc(s.title) + '</h2>';
+        s.order.forEach(opt => {
+          const n = rows.filter(r => r[s.key] === opt).length, p = pct(n, t);
+          html += '<div class="row"><div class="lbl"><span>' + esc(opt) + '</span><em>' + n + ' · ' + p + '%</em></div>' +
+                  '<div class="bar"><i style="width:' + p + '%"></i></div></div>';
+        });
+        html += '</div>';
+      });
+
+      const comments = rows.filter(r => r.comment);
+      html += '<div class="card"><h2>Comentarios (' + comments.length + ')</h2>';
+      html += comments.length
+        ? comments.map(r => '<div class="comment">' + esc(r.comment) + '<time>' + new Date(r.created_at).toLocaleString('es-MX') + '</time></div>').join('')
+        : '<p class="empty">Sin comentarios aún.</p>';
+      html += '</div>';
+      box.innerHTML = html;
+    }
+
+    function esc(s) { return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+    // ── CSV ──
+    document.getElementById('btnCsv').onclick = () => {
+      if (!rows.length) return;
+      const cols = ['created_at','delay_frequency','wait_time','detail_perception','preference','delay_impact','interest_two_tiers','satisfaction','comment'];
+      const q = v => '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"';
+      const csv = '\ufeff' + [cols.join(',')].concat(rows.map(r => cols.map(c => q(r[c])).join(','))).join('\n');
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
+      a.download = 'encuesta_servicio.csv';
+      a.click();
+    };
+  </script>
+</body>
+</html>

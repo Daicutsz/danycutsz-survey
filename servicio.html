@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#080808" />
+  <title>danycutsz — Tu opinión sobre el servicio</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0"></script>
+  <link rel="stylesheet" href="css/survey.css" />
+</head>
+<body>
+
+  <div class="splash" id="splash">
+    <div class="splash-inner">
+      <div class="brand-mark">
+        <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
+          <rect width="48" height="48" rx="12" fill="#C9A84C" fill-opacity="0.12"/>
+          <path d="M14 34L20 14H24L28 28L32 14H36L30 34H26L24 26L22 34H14Z" fill="#C9A84C"/>
+        </svg>
+      </div>
+      <h1 class="splash-brand">danycutsz</h1>
+      <p class="splash-sub">Ayúdanos a ajustar el servicio</p>
+      <div class="splash-loader"><div class="loader-bar"></div></div>
+    </div>
+  </div>
+
+  <div class="app" id="app" style="display:none">
+    <header class="survey-header">
+      <div class="header-left"><span class="header-brand">danycutsz</span></div>
+      <div class="header-right"><div class="progress-text" id="progressText">1 / 8</div></div>
+    </header>
+    <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+    <main class="questions-container" id="questionsContainer"><!-- Generado por js/servicio.js --></main>
+  </div>
+
+  <div class="success-screen" id="successScreen" style="display:none">
+    <div class="success-inner">
+      <div class="success-icon">
+        <svg width="64" height="64" viewBox="0 0 64 64" fill="none">
+          <circle cx="32" cy="32" r="32" fill="#C9A84C" fill-opacity="0.12"/>
+          <path d="M20 32L28 40L44 24" stroke="#C9A84C" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <h2 class="success-title">¡Gracias por tu opinión!</h2>
+      <p class="success-msg">Con tus respuestas vamos a organizar mejor las citas y el tiempo de cada servicio.</p>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script src="js/config.js"></script>
+  <script src="js/servicio.js"></script>
+</body>
+</html>
